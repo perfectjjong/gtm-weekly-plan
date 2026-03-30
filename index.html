@@ -441,7 +441,24 @@ db.ref('.info/connected').on('value', snap => {
     }
 });
 
+/* Timeout fallback — remove loading overlay if Firebase doesn't respond in 10s */
+const _loadingTimeout = setTimeout(() => {
+    if (!firebaseReady) {
+        firebaseReady = true;
+        document.getElementById('todayDate').textContent = formatDate(getTodayStr());
+        MEMBERS.forEach(m => renderMemberChecklist(m));
+        updateProgress();
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) { overlay.classList.add('hidden'); setTimeout(() => overlay.remove(), 600); }
+        const badge = document.getElementById('conn-badge');
+        badge.textContent = '⚠️ Timeout';
+        badge.className = 'conn-badge offline';
+        console.warn('Firebase: loading timeout — using default data');
+    }
+}, 10000);
+
 ROOT.on('value', snap => {
+    clearTimeout(_loadingTimeout);
     const val = snap.val();
 
     if (!val) {
@@ -509,6 +526,22 @@ ROOT.on('value', snap => {
         });
         updateProgress();
     }
+}, err => {
+    /* Firebase permission denied or network error */
+    console.error('Firebase read error:', err.message);
+    clearTimeout(_loadingTimeout);
+    if (!firebaseReady) {
+        firebaseReady = true;
+        document.getElementById('todayDate').textContent = formatDate(getTodayStr());
+        MEMBERS.forEach(m => renderMemberChecklist(m));
+        updateProgress();
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) { overlay.classList.add('hidden'); setTimeout(() => overlay.remove(), 600); }
+    }
+    const badge = document.getElementById('conn-badge');
+    badge.textContent = '🔴 Error';
+    badge.className = 'conn-badge offline';
+    showToast('⚠️ Database connection failed: ' + err.message);
 });
 
 /* ── Write to Firebase ── */
