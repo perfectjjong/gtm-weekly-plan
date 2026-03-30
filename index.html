@@ -397,7 +397,7 @@ const collapseState = {};
 MEMBERS.forEach(m => WEEKS.forEach(w => {
     editModeState[m+'-'+w] = false;
     collapseState[m+'-'+w]  = (w !== 'w1');
-}));
+})));
 
 let firebaseReady = false;
 let memoDebounce  = {};
